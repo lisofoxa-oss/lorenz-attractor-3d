@@ -1029,7 +1029,10 @@ dz/dt = xy − βz</pre>
                         <div style="font-weight: 700; color: var(--text-primary); margin-bottom: 0.3rem;">🦋 Эффект бабочки</div>
                         <div style="font-size: 0.85rem; color: var(--text-muted);">Две траектории с разницей в начальных условиях 0.0001</div>
                     </div>
-                    <button class="btn btn-secondary" id="btnButterfly">▶ Запустить</button>
+                    <div style="display:flex;gap:0.5rem;">
+                        <button class="btn btn-secondary" id="btnButterfly">▶ Запустить</button>
+                        <button class="btn btn-secondary" id="btnButterflyStop" style="display:none;">⏹ Стоп</button>
+                    </div>
                 </div>
                 <canvas class="butterfly-canvas" id="butterflyCanvas"></canvas>
                 <div class="butterfly-info">

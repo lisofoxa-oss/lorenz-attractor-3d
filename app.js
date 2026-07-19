@@ -629,7 +629,27 @@ function runButterfly() {
 }
 
 const btnButterfly = document.getElementById('btnButterfly');
-if (btnButterfly) btnButterfly.addEventListener('click', runButterfly);
+const btnButterflyStop = document.getElementById('btnButterflyStop');
+
+if (btnButterfly) {
+    btnButterfly.addEventListener('click', () => {
+        runButterfly();
+        btnButterfly.style.display = 'none';
+        if (btnButterflyStop) btnButterflyStop.style.display = 'inline-flex';
+    });
+}
+
+if (btnButterflyStop) {
+    btnButterflyStop.addEventListener('click', () => {
+        if (bfAnimation) {
+            cancelAnimationFrame(bfAnimation);
+            bfAnimation = null;
+        }
+        btnButterflyStop.style.display = 'none';
+        if (btnButterfly) btnButterfly.style.display = 'inline-flex';
+        showToast('⏹', 'Эффект бабочки остановлен');
+    });
+}
 
 // ═══════════════════════════════════════════════════════════════════
 //  LOADING & START

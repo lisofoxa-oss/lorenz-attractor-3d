@@ -1,13 +1,13 @@
-# 🌀 Lorenz Attractor 3D — Ultimate Chaos Visualization
+# 🌀 Lorenz Attractor 3D — Interactive Chaos Visualization
 
 [![Live Demo](https://img.shields.io/badge/🌐_Live_Demo-Посмотреть_онлайн-00e5ff?style=for-the-badge)](https://lisofoxa-oss.github.io/lorenz-attractor-3d/)
 [![GitHub](https://img.shields.io/badge/GitHub-Репозиторий-222222?style=for-the-badge&logo=github)](https://github.com/lisofoxa-oss/lorenz-attractor-3d)
-[![Three.js](https://img.shields.io/badge/Three.js-r160-000000?style=for-the-badge&logo=three.js)](https://threejs.org)
-[![PWA](https://img.shields.io/badge/PWA-Offline_Ready-5a0fc8?style=for-the-badge)](https://web.dev/progressive-web-apps/)
-[![VR](https://img.shields.io/badge/WebXR-VR_Ready-ff006e?style=for-the-badge)](https://immersiveweb.dev/)
+[![Three.js](https://img.shields.io/badge/Three.js-r152-000000?style=for-the-badge&logo=three.js)](https://threejs.org)
 [![License](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)](LICENSE)
 
-> **The most advanced interactive 3D chaos visualization on the web.**
+> **Interactive 3D visualization of Lorenz, Rossler, Aizawa and Thomas attractors.**
+> 
+> 15,000 points, glowing particles, butterfly effect demo, live parameter sliders, 4 attractors, video recording, dark/light themes, presets, mobile support.
 
 [🌐 Live Demo](https://lisofoxa-oss.github.io/lorenz-attractor-3d/) · [📥 Download ZIP](https://github.com/lisofoxa-oss/lorenz-attractor-3d/archive/refs/heads/main.zip)
 
@@ -15,30 +15,32 @@
 
 ---
 
-## ✨ Features
+## ✨ Features (What Actually Works)
 
-| Feature | Description |
-|---------|-------------|
-| **25,000 points** | Smooth colored attractor line in real-time |
-| **200 particles** | Glowing running points with bloom effect |
-| **3,000 stars** | Pulsating starfield background |
-| **🦋 Butterfly Effect** | Interactive demo: 0.0001 difference → total divergence |
-| **🎚️ Live Parameters** | Sliders for σ, ρ, β — change and watch in real-time |
-| **🔄 4 Attractors** | Lorenz, Rössler, Aizawa, Thomas — switch instantly |
-| **🎥 Video Recording** | Save simulation as WebM directly from browser |
-| **🎞 GIF Export** | Export frames for GIF creation |
-| **🌓 Themes** | Dark cosmic & light for presentations |
-| **🥽 WebXR / VR** | Immersive VR mode via WebXR API |
-| **🔊 Sound Reactive** | Particles react to microphone input |
-| **📱 PWA + Offline** | Install as app, works without internet |
-| **🎬 Cinematic Camera** | Automatic smooth camera movements |
-| **💾 Presets + localStorage** | Save favorite settings, auto-restore |
-| **✨ Bloom + SSAO + DOF** | Cinematic post-processing |
-| **🌈 Chromatic Aberration** | RGB shift effect |
-| **📊 FPS Graph HUD** | Real-time performance monitoring |
-| **🎛️ 5 Parameter Presets** | Classic, Chaos, Stable, Torus, Spiral |
-| **📱 Touch Gestures** | Full mobile support with gestures |
-| **🔓 Open Source MIT** | Free to use, modify, embed |
+| Feature | Status | Description |
+|---------|--------|-------------|
+| **15,000 points** | ✅ | Smooth colored attractor line in real-time |
+| **100 particles** | ✅ | Glowing running points with additive blending |
+| **2,000 stars** | ✅ | Pulsating starfield background |
+| **🦋 Butterfly Effect** | ✅ | Interactive demo: 0.0001 difference → total divergence |
+| **🎚️ Live Parameters** | ✅ | Sliders for σ, ρ, β — change and watch in real-time |
+| **🔄 4 Attractors** | ✅ | Lorenz, Rössler, Aizawa, Thomas — switch instantly |
+| **🎥 Video Recording** | ✅ | Save simulation as WebM directly from browser |
+| **🌓 Dark/Light Theme** | ✅ | Toggle between cosmic dark and clean light |
+| **💾 Presets + localStorage** | ✅ | 5 presets, settings auto-save and restore |
+| **📱 Mobile / Touch** | ✅ | Full touch support with gestures |
+| **🎛️ HUD Overlay** | ✅ | Real-time parameter display |
+| **🔓 Open Source MIT** | ✅ | Free to use, modify, embed |
+
+### Planned / In Development
+
+| Feature | Status | Note |
+|---------|--------|------|
+| Bloom + Glow | ⏳ | Post-processing (requires WebGL2) |
+| VR Mode | ⏳ | WebXR support |
+| Sound Reactive | ⏳ | Microphone input |
+| GIF Export | ⏳ | Use video + online converter for now |
+| PWA Offline | ⏳ | Service Worker |
 
 ---
 
@@ -88,14 +90,9 @@ dz/dt = xy − βz
 
 ## 🛠 Tech Stack
 
-- **Three.js r160** — WebGL 3D engine
-- **EffectComposer** — Post-processing pipeline
-- **UnrealBloomPass** — Bloom glow effect
-- **Custom Shaders** — Chromatic aberration, particles
+- **Three.js r152** — WebGL 3D engine (WebGL1 compatible)
+- **Custom Shaders** — Particle glow effect
 - **MediaRecorder API** — Video capture
-- **WebXR** — VR support
-- **Web Audio API** — Sound reactivity
-- **Service Worker** — Offline PWA
 - **localStorage** — Settings persistence
 - **GitHub Pages** — Free hosting
 
@@ -105,12 +102,12 @@ dz/dt = xy − βz
 
 ```
 .
-├── index.html          # Main page with SEO, UI, animations
-├── app.js              # Three.js: scene, 4 attractors, particles, effects
-├── manifest.json       # PWA manifest
-├── sw.js               # Service Worker for offline
+├── index.html          # Main page with SEO, UI
+├── app.js              # Three.js: scene, 4 attractors, particles
+├── manifest.json       # PWA manifest (placeholder)
+├── sw.js               # Service Worker (placeholder)
 ├── assets/
-│   └── preview.png     # OG image for social
+│   └── preview.png     # OG image
 ├── README.md           # This file
 ├── LICENSE             # MIT
 ├── CNAME               # Custom domain config
