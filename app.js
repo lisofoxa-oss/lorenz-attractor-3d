@@ -270,8 +270,13 @@ function rebuildStars() {
 // ═══════════════════════════════════════════════════════════════════
 //  ИНИЦИАЛИЗАЦИЯ
 // ═══════════════════════════════════════════════════════════════════
-rebuildAttractor();
-rebuildStars();
+try {
+    rebuildAttractor();
+    rebuildStars();
+} catch (e) {
+    console.error('Error building attractor:', e);
+    showToast('⚠️', 'Ошибка инициализации 3D. Проверьте WebGL.');
+}
 const ambientLight = new THREE.AmbientLight(0x404080, 0.5);
 scene.add(ambientLight);
 
@@ -370,33 +375,41 @@ function animate() {
 //  HUD
 // ═══════════════════════════════════════════════════════════════════
 function updateHUD() {
-    document.getElementById('hudSigma').textContent = CONFIG.sigma.toFixed(1);
-    document.getElementById('hudRho').textContent = CONFIG.rho.toFixed(1);
-    document.getElementById('hudBeta').textContent = CONFIG.beta.toFixed(3);
-    document.getElementById('hudAttractor').textContent = ATTRACTORS[CONFIG.currentAttractor].name;
-    document.getElementById('hudPoints').textContent = CONFIG.numPoints;
-    document.getElementById('hudParticles').textContent = CONFIG.particleCount;
+    const safeSet = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = val;
+    };
+    safeSet('hudSigma', CONFIG.sigma.toFixed(1));
+    safeSet('hudRho', CONFIG.rho.toFixed(1));
+    safeSet('hudBeta', CONFIG.beta.toFixed(3));
+    safeSet('hudAttractor', ATTRACTORS[CONFIG.currentAttractor]?.name || '—');
+    safeSet('hudPoints', CONFIG.numPoints);
+    safeSet('hudParticles', CONFIG.particleCount);
 }
 
 function updateFPSHUD(fps) {
     const el = document.getElementById('hudFps');
-    el.textContent = fps;
-    el.className = 'hud-value' + (fps < 30 ? ' danger' : fps < 50 ? ' warn' : '');
-    document.getElementById('hudTime').textContent = clock.getElapsedTime().toFixed(1) + 's';
+    if (el) {
+        el.textContent = fps;
+        el.className = 'hud-value' + (fps < 30 ? ' danger' : fps < 50 ? ' warn' : '');
+    }
+    const timeEl = document.getElementById('hudTime');
+    if (timeEl && clock) timeEl.textContent = clock.getElapsedTime().toFixed(1) + 's';
 
-    // График FPS
     const canvas = document.getElementById('fpsGraph');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    const w = canvas.width = canvas.offsetWidth;
-    const h = canvas.height = canvas.offsetHeight;
+    if (!ctx) return;
+    const w = canvas.width = canvas.offsetWidth || 180;
+    const h = canvas.height = canvas.offsetHeight || 40;
     ctx.clearRect(0, 0, w, h);
+    if (fpsHistory.length < 2) return;
     ctx.beginPath();
     ctx.strokeStyle = '#00e5ff';
     ctx.lineWidth = 2;
     for (let i = 0; i < fpsHistory.length; i++) {
-        const x = (i / (fpsHistory.length - 1)) * w;
-        const y = h - (fpsHistory[i] / 120) * h;
+        const x = (i / Math.max(fpsHistory.length - 1, 1)) * w;
+        const y = h - (Math.min(fpsHistory[i], 120) / 120) * h;
         if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
     }
     ctx.stroke();
@@ -407,8 +420,14 @@ function updateFPSHUD(fps) {
 // ═══════════════════════════════════════════════════════════════════
 function showToast(icon, text) {
     const toast = document.getElementById('toast');
-    document.getElementById('toastIcon').textContent = icon;
-    document.getElementById('toastText').textContent = text;
+    const iconEl = document.getElementById('toastIcon');
+    const textEl = document.getElementById('toastText');
+    if (!toast || !iconEl || !textEl) {
+        console.log(`[Toast] ${icon} ${text}`);
+        return;
+    }
+    iconEl.textContent = icon;
+    textEl.textContent = text;
     toast.classList.add('show');
     setTimeout(() => toast.classList.remove('show'), 3000);
 }
@@ -503,7 +522,7 @@ function saveConfig() {
 }
 
 // Reset
-document.getElementById('btnReset')?.addEventListener('click', () => {
+(document.getElementById('btnReset') || {addEventListener: () => {}}).addEventListener('click', () => {
     CONFIG = { ...DEFAULT_CONFIG };
     ['Sigma', 'Rho', 'Beta', 'Bloom', 'Speed', 'Stars', 'Dof', 'Chroma'].forEach(p => {
         const el = document.getElementById('slider' + p);
@@ -610,12 +629,12 @@ btnRecord?.addEventListener('click', async () => {
 });
 
 // GIF Export (simplified)
-document.getElementById('btnGif')?.addEventListener('click', () => {
+(document.getElementById('btnGif') || {addEventListener: () => {}}).addEventListener('click', () => {
     showToast('🎞', 'GIF экспорт: используйте запись видео и конвертируйте онлайн');
 });
 
 // Sound Reactive
-document.getElementById('btnSound')?.addEventListener('click', () => {
+(document.getElementById('btnSound') || {addEventListener: () => {}}).addEventListener('click', () => {
     if (!audioReactive) { initAudio(); }
     else {
         audioReactive = false;
@@ -624,7 +643,7 @@ document.getElementById('btnSound')?.addEventListener('click', () => {
 });
 
 // VR
-document.getElementById('btnVR')?.addEventListener('click', async () => {
+(document.getElementById('btnVR') || {addEventListener: () => {}}).addEventListener('click', async () => {
     if ('xr' in navigator) {
         try {
             const session = await navigator.xr.requestSession('immersive-vr');
@@ -720,7 +739,7 @@ function runButterfly() {
     step();
 }
 
-document.getElementById('btnButterfly')?.addEventListener('click', runButterfly);
+(document.getElementById('btnButterfly') || {addEventListener: () => {}}).addEventListener('click', runButterfly);
 
 // ═══════════════════════════════════════════════════════════════════
 //  LOADING & START
@@ -746,11 +765,21 @@ const loadInterval = setInterval(() => {
     if (stepIndex >= loadSteps.length) {
         clearInterval(loadInterval);
         setTimeout(() => {
-            loadingScreen.style.opacity = '0';
-            setTimeout(() => { loadingScreen.style.display = 'none'; }, 1000);
+            if (loadingScreen) {
+                loadingScreen.style.opacity = '0';
+                setTimeout(() => { if (loadingScreen) loadingScreen.style.display = 'none'; }, 1000);
+            }
         }, 500);
     }
 }, 400);
+
+// Fallback: скрыть загрузку через 8 секунд в любом случае
+setTimeout(() => {
+    if (loadingScreen && loadingScreen.style.display !== 'none') {
+        loadingScreen.style.opacity = '0';
+        setTimeout(() => { if (loadingScreen) loadingScreen.style.display = 'none'; }, 1000);
+    }
+}, 8000);
 
 // Touch gestures
 let touchStartX = 0, touchStartY = 0;
