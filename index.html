@@ -1089,5 +1089,18 @@ dz/dt = xy − βz</pre>
     </footer>
 
     <script type="module" src="app.js"></script>
+
+    <div class="toast" id="toast">
+        <span class="toast-icon" id="toastIcon">✅</span>
+        <span class="toast-text" id="toastText">Уведомление</span>
+    </div>
+
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+    </script>
+
 </body>
 </html>

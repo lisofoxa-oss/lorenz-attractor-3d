@@ -1,148 +1,130 @@
-# 🌀 3D Аттрактор Лоренца — Интерактивная визуализация хаоса
+# 🌀 Lorenz Attractor 3D — Ultimate Chaos Visualization
 
-[![Live Demo](https://img.shields.io/badge/🌐_Live_Demo-Посмотреть_онлайн-00d4ff?style=for-the-badge)](https://lisofoxa-oss.github.io/lorenz-attractor-3d/)
+[![Live Demo](https://img.shields.io/badge/🌐_Live_Demo-Посмотреть_онлайн-00e5ff?style=for-the-badge)](https://lisofoxa-oss.github.io/lorenz-attractor-3d/)
 [![GitHub](https://img.shields.io/badge/GitHub-Репозиторий-222222?style=for-the-badge&logo=github)](https://github.com/lisofoxa-oss/lorenz-attractor-3d)
 [![Three.js](https://img.shields.io/badge/Three.js-r160-000000?style=for-the-badge&logo=three.js)](https://threejs.org)
+[![PWA](https://img.shields.io/badge/PWA-Offline_Ready-5a0fc8?style=for-the-badge)](https://web.dev/progressive-web-apps/)
+[![VR](https://img.shields.io/badge/WebXR-VR_Ready-ff006e?style=for-the-badge)](https://immersiveweb.dev/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)](LICENSE)
 
-> **Потрясающая интерактивная 3D-визуализация аттрактора Лоренца прямо в браузере.**
-> 
-> 25 000 точек, светящиеся частицы, эффект бабочки, слайдеры параметров, запись видео, 4 аттрактора, тёмная/светлая тема.
+> **The most advanced interactive 3D chaos visualization on the web.**
 
-[🌐 Открыть демо](https://lisofoxa-oss.github.io/lorenz-attractor-3d/) · [📥 Скачать ZIP](https://github.com/lisofoxa-oss/lorenz-attractor-3d/archive/refs/heads/main.zip)
+[🌐 Live Demo](https://lisofoxa-oss.github.io/lorenz-attractor-3d/) · [📥 Download ZIP](https://github.com/lisofoxa-oss/lorenz-attractor-3d/archive/refs/heads/main.zip)
 
 ![Preview](https://lisofoxa-oss.github.io/lorenz-attractor-3d/assets/preview.png)
 
 ---
 
-## ✨ Что внутри
+## ✨ Features
 
-Это **не просто картинка** — это полноценная интерактивная лаборатория хаоса:
-
-| 🎛️ Фича | Описание |
-|----------|----------|
-| **25 000 точек** | Плавная цветная линия аттрактора в реальном времени |
-| **200 частиц** | Бегущие светящиеся точки с glow-эффектом |
-| **3 000 звёзд** | Фоновое звёздное поле с пульсацией |
-| **🦋 Эффект бабочки** | Интерактивная демонстрация чувствительности к начальным условиям |
-| **🎚️ Живые параметры** | Слайдеры σ, ρ, β — меняй и наблюдай в реальном времени |
-| **🔄 4 аттрактора** | Лоренц, Рёсслер, Айдзава, Томас — переключайся |
-| **🎥 Запись видео** | Сохрани симуляцию в WebM прямо из браузера |
-| **🌓 Темы** | Тёмная космическая и светлая для презентаций |
-| **✨ Bloom** | Кинематографичная постобработка свечения |
-| **📱 Адаптивность** | От телефона до 4K-монитора |
+| Feature | Description |
+|---------|-------------|
+| **25,000 points** | Smooth colored attractor line in real-time |
+| **200 particles** | Glowing running points with bloom effect |
+| **3,000 stars** | Pulsating starfield background |
+| **🦋 Butterfly Effect** | Interactive demo: 0.0001 difference → total divergence |
+| **🎚️ Live Parameters** | Sliders for σ, ρ, β — change and watch in real-time |
+| **🔄 4 Attractors** | Lorenz, Rössler, Aizawa, Thomas — switch instantly |
+| **🎥 Video Recording** | Save simulation as WebM directly from browser |
+| **🎞 GIF Export** | Export frames for GIF creation |
+| **🌓 Themes** | Dark cosmic & light for presentations |
+| **🥽 WebXR / VR** | Immersive VR mode via WebXR API |
+| **🔊 Sound Reactive** | Particles react to microphone input |
+| **📱 PWA + Offline** | Install as app, works without internet |
+| **🎬 Cinematic Camera** | Automatic smooth camera movements |
+| **💾 Presets + localStorage** | Save favorite settings, auto-restore |
+| **✨ Bloom + SSAO + DOF** | Cinematic post-processing |
+| **🌈 Chromatic Aberration** | RGB shift effect |
+| **📊 FPS Graph HUD** | Real-time performance monitoring |
+| **🎛️ 5 Parameter Presets** | Classic, Chaos, Stable, Torus, Spiral |
+| **📱 Touch Gestures** | Full mobile support with gestures |
+| **🔓 Open Source MIT** | Free to use, modify, embed |
 
 ---
 
-## 🚀 Быстрый старт
+## 🚀 Quick Start
 
-### Онлайн (рекомендуется)
-Просто открой: **[lisofoxa-oss.github.io/lorenz-attractor-3d](https://lisofoxa-oss.github.io/lorenz-attractor-3d/)**
+### Online
+Open: **[lisofoxa-oss.github.io/lorenz-attractor-3d](https://lisofoxa-oss.github.io/lorenz-attractor-3d/)**
 
-### Локально
+### Local
 ```bash
-# Клонируй репозиторий
 git clone https://github.com/lisofoxa-oss/lorenz-attractor-3d.git
 cd lorenz-attractor-3d
-
-# Запусти локальный сервер
 python -m http.server 8000
-# или
-npx serve .
 ```
 
 ---
 
-## 🎮 Управление
+## 🎮 Controls
 
-| Действие | Описание |
-|----------|----------|
-| 🖱️ **ЛКМ + движение** | Вращение камеры вокруг сцены |
-| 🖱️ **ПКМ + движение** | Панорамирование (сдвиг) |
-| 🖱️ **Колесико** | Приближение / отдаление (зум) |
-| ✨ **Авто-вращение** | Камера медленно вращается автоматически |
+| Action | Input |
+|--------|-------|
+| Rotate | 🖱️ Left click + drag |
+| Pan | 🖱️ Right click + drag |
+| Zoom | 🖱️ Scroll wheel |
+| Reset camera | Double click |
+| Auto-rotate | Enabled by default |
+| Touch | Single finger rotate, pinch zoom |
 
 ---
 
-## 🔬 Математика
+## 🔬 Mathematics
 
-### Уравнения Лоренца
-
+### Lorenz Equations
 ```
 dx/dt = σ(y − x)
 dy/dt = x(ρ − z) − y
 dz/dt = xy − βz
 ```
 
-### Параметры
-
-| Параметр | Значение | Физический смысл |
-|----------|----------|------------------|
-| **σ** (сигма) | 10.0 | Число Прандтля — вязкость |
-| **ρ** (ро) | 28.0 | Число Релея — нагрев |
-| **β** (бета) | 8/3 ≈ 2.667 | Геометрический параметр |
-
-### Другие аттракторы
-
-- **Рёсслер** — химические реакции, спиральная структура
-- **Айдзава** — электромагнитные поля, тороидальная форма
-- **Томас** — биологические системы, симметричный цикл
+| Parameter | Value | Meaning |
+|-----------|-------|---------|
+| **σ** | 10.0 | Prandtl number — viscosity |
+| **ρ** | 28.0 | Rayleigh number — heating |
+| **β** | 8/3 | Geometric aspect ratio |
 
 ---
 
-## 🦋 Эффект бабочки
+## 🛠 Tech Stack
 
-Интерактивная демонстрация: запусти две траектории с разницей в начальных условиях всего **0.0001** и наблюдай, как они полностью расходятся через несколько секунд. Это и есть суть хаоса.
-
----
-
-## 🛠 Технологии
-
-- **[Three.js r160](https://threejs.org/)** — 3D-движок на WebGL
-- **[EffectComposer](https://threejs.org/examples/?q=postprocessing)** — постобработка
-- **[UnrealBloomPass](https://threejs.org/examples/?q=bloom)** — эффект свечения
-- **[OrbitControls](https://threejs.org/docs/#examples/en/controls/OrbitControls)** — управление камерой
-- **[MediaRecorder API](https://developer.mozilla.org/en-US/docs/Web/API/MediaRecorder)** — запись видео
-- **ES Modules** — современный JavaScript без бандлеров
-- **CSS Custom Properties** — тёмная/светлая тема
-- **Intersection Observer** — анимации при скролле
-- **GitHub Pages** — бесплатный хостинг
+- **Three.js r160** — WebGL 3D engine
+- **EffectComposer** — Post-processing pipeline
+- **UnrealBloomPass** — Bloom glow effect
+- **Custom Shaders** — Chromatic aberration, particles
+- **MediaRecorder API** — Video capture
+- **WebXR** — VR support
+- **Web Audio API** — Sound reactivity
+- **Service Worker** — Offline PWA
+- **localStorage** — Settings persistence
+- **GitHub Pages** — Free hosting
 
 ---
 
-## 📁 Структура
+## 📁 Structure
 
 ```
 .
-├── index.html          # Главная страница с SEO, UI, анимациями
-├── app.js              # Three.js: сцена, 4 аттрактора, частицы, bloom, запись
+├── index.html          # Main page with SEO, UI, animations
+├── app.js              # Three.js: scene, 4 attractors, particles, effects
+├── manifest.json       # PWA manifest
+├── sw.js               # Service Worker for offline
 ├── assets/
-│   └── preview.png     # OG-image для соцсетей
-├── README.md           # Этот файл
+│   └── preview.png     # OG image for social
+├── README.md           # This file
 ├── LICENSE             # MIT
-├── CNAME               # Кастомный домен
+├── CNAME               # Custom domain config
 └── .gitignore
 ```
 
 ---
 
-## 📝 Лицензия
+## 📝 License
 
-MIT License — свободно используй, модифицируй, распространяй.
-
----
-
-## 🤝 Вклад
-
-Идеи для PR:
-- 🎚️ Больше параметров (скорость вращения, цветовые схемы)
-- 📊 3D-график чувствительности
-- 🎥 Экспорт в GIF
-- 🌐 Переводы
-- 🔢 Новые аттракторы (Чуа, Дуффинга, Клиффорда)
+MIT License — free to use, modify, distribute.
 
 ---
 
 <p align="center">
-  🌀 Сделано с любовью к математике, хаосу и красоте
+  🌀 Built with chaos and passion by <a href="https://github.com/lisofoxa-oss">lisofoxa-oss</a>
 </p>

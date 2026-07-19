@@ -1,0 +1,31 @@
+{
+  "name": "Lorenz Attractor 3D — Ultimate Chaos Visualization",
+  "short_name": "Lorenz 3D",
+  "description": "Interactive 3D visualization of Lorenz, Rossler, Aizawa and Thomas attractors with WebGL, bloom, VR, sound reactive particles and more.",
+  "start_url": "/lorenz-attractor-3d/",
+  "display": "standalone",
+  "background_color": "#050508",
+  "theme_color": "#00e5ff",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect fill='%23050508' width='192' height='192'/%3E%3Ctext x='96' y='140' text-anchor='middle' font-size='140'%3E🌀%3C/text%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect fill='%23050508' width='512' height='512'/%3E%3Ctext x='256' y='380' text-anchor='middle' font-size='380'%3E🌀%3C/text%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ],
+  "categories": ["education", "entertainment", "utilities"],
+  "screenshots": [
+    {
+      "src": "assets/preview.png",
+      "sizes": "1200x630",
+      "type": "image/png",
+      "form_factor": "wide"
+    }
+  ]
+}
