@@ -811,6 +811,47 @@
             opacity: 1;
             transform: translateY(0);
         }
+    
+        .presets-bar {
+            display: flex;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+            margin-bottom: 2rem;
+            padding: 1rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+        }
+
+        .preset-chip {
+            padding: 0.6rem 1.2rem;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: var(--bg-card);
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: var(--font-main);
+            position: relative;
+        }
+
+        .preset-chip:hover {
+            border-color: var(--border-hover);
+            color: var(--text-primary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,229,255,0.1);
+        }
+
+        .preset-chip.active {
+            background: linear-gradient(135deg, rgba(0,229,255,0.15), rgba(157,78,221,0.15));
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+            box-shadow: 0 0 20px rgba(0,229,255,0.15);
+            transform: translateY(-2px);
+        }
+    
     </style>
     <script>
     // Проверка WebGL перед загрузкой Three.js
@@ -958,6 +999,17 @@ dz/dt = xy − βz</pre>
                     <button class="btn btn-secondary" id="btnRecord">🔴 Запись</button>
                     <button class="btn btn-primary" id="btnPause">⏸ Пауза</button>
                 </div>
+            </div>
+
+            <div style="margin-bottom:0.8rem;font-size:0.85rem;color:var(--text-muted);font-weight:500;">
+                💾 Быстрые пресеты (кликни чтобы применить):
+            </div>
+            <div class="presets-bar" id="presetsBar">
+                <button class="preset-chip active" data-preset="classic">Классика</button>
+                <button class="preset-chip" data-preset="chaos">Хаос</button>
+                <button class="preset-chip" data-preset="stable">Стабильность</button>
+                <button class="preset-chip" data-preset="torus">Тор</button>
+                <button class="preset-chip" data-preset="spiral">Спираль</button>
             </div>
 
             <div class="attractor-tabs" id="attractorTabs">
