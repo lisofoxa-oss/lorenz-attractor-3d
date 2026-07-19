@@ -680,5 +680,9 @@ document.addEventListener('dblclick', () => {
 });
 
 // Init
-updateHUD();
-animate();
+console.log("%c🌀 Lorenz Attractor 3D v2.1.0", "color:#00e5ff;font-size:16px;font-weight:bold;");
+    console.log("%cBuild: 2026-07-19 | Three.js r152 | WebGL1 Mode", "color:#505070;font-size:12px;");
+    console.log("%cGitHub: lisofoxa-oss/lorenz-attractor-3d", "color:#9d4edd;font-size:11px;");
+    updateHUD();
+    animate();
+    setTimeout(() => showToast("🌀", "Lorenz 3D v2.1.0 загружен!"), 1000);
