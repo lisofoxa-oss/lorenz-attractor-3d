@@ -812,11 +812,37 @@
             transform: translateY(0);
         }
     </style>
+    <script>
+    // Проверка WebGL перед загрузкой Three.js
+    (function() {
+        const canvas = document.createElement('canvas');
+        const gl = canvas.getContext('webgl2') || canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+        if (!gl) {
+            document.body.innerHTML = `
+                <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:#050508;color:#e0e0ff;font-family:sans-serif;text-align:center;padding:2rem;">
+                    <div style="font-size:4rem;margin-bottom:1rem;">⚠️</div>
+                    <h1 style="font-size:1.5rem;margin-bottom:1rem;color:#ff2a6d;">WebGL не поддерживается</h1>
+                    <p style="max-width:500px;line-height:1.6;color:#a0a0d0;">
+                        Ваш браузер или видеодрайвер не поддерживает WebGL, необходимый для 3D-визуализации.
+                    </p>
+                    <p style="margin-top:1rem;color:#606080;font-size:0.9rem;">
+                        Попробуйте:<br>
+                        • Обновить драйвер видеокарты (NVIDIA)<br>
+                        • Включить аппаратное ускорение в браузере<br>
+                        • Открыть в другом браузере (Chrome, Firefox, Edge)<br>
+                        • Отключить флаги безопасности если используете флаги запуска
+                    </p>
+                </div>
+            `;
+            throw new Error('WebGL not supported');
+        }
+    })();
+</script>
     <script type="importmap">
     {
         "imports": {
-            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            "three": "https://unpkg.com/three@0.152.2/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.152.2/examples/jsm/"
         }
     }
     </script>

@@ -1,32 +1,23 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
-import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 
 // ═══════════════════════════════════════════════════════════════════
 //  КОНФИГУРАЦИЯ
 // ═══════════════════════════════════════════════════════════════════
 const DEFAULT_CONFIG = {
     sigma: 10.0, rho: 28.0, beta: 8.0 / 3.0,
-    dt: 0.008, numPoints: 25000, particleCount: 200,
-    bloomStrength: 1.5, bloomRadius: 0.4, bloomThreshold: 0.1,
-    autoRotateSpeed: 0.3, particleSpeedMult: 1.0, starCount: 3000,
+    dt: 0.008, numPoints: 15000, particleCount: 100,
+    bloomStrength: 1.2, autoRotateSpeed: 0.3,
+    particleSpeedMult: 1.0, starCount: 2000,
     paused: false, currentAttractor: 'lorenz',
-    dofAmount: 0.0, chromaticAberration: 0.0, cinematicMode: false,
-    soundReactive: false, vrMode: false
+    cinematicMode: false
 };
 
 let CONFIG = { ...DEFAULT_CONFIG };
 
-// Загрузка из localStorage
 try {
-    const saved = localStorage.getItem('lorenz-config');
-    if (saved) {
-        const parsed = JSON.parse(saved);
-        CONFIG = { ...DEFAULT_CONFIG, ...parsed };
-    }
+    const saved = localStorage.getItem('lorenz-config-v2');
+    if (saved) CONFIG = { ...DEFAULT_CONFIG, ...JSON.parse(saved) };
 } catch (e) {}
 
 const ATTRACTORS = {
@@ -81,59 +72,30 @@ const PRESETS = {
 };
 
 // ═══════════════════════════════════════════════════════════════════
-//  СЦЕНА
+//  СЦЕНА (совместимая с WebGL1)
 // ═══════════════════════════════════════════════════════════════════
 const container = document.getElementById('canvas-container');
+if (!container) {
+    console.error('Canvas container not found');
+    throw new Error('Canvas container not found');
+}
+
 const scene = new THREE.Scene();
 scene.fog = new THREE.FogExp2(0x050508, 0.012);
 
 const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
 camera.position.set(35, 25, 45);
 
-const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+// WebGL1 fallback renderer
+const renderer = new THREE.WebGLRenderer({ 
+    antialias: true, 
+    alpha: true,
+    powerPreference: 'high-performance'
+});
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.toneMapping = THREE.ReinhardToneMapping;
-renderer.toneMappingExposure = 1.2;
+renderer.setClearColor(0x000000, 0);
 container.appendChild(renderer.domElement);
-
-// Post-processing
-const composer = new EffectComposer(renderer);
-const renderPass = new RenderPass(scene, camera);
-composer.addPass(renderPass);
-
-const bloomPass = new UnrealBloomPass(
-    new THREE.Vector2(window.innerWidth, window.innerHeight),
-    CONFIG.bloomStrength, CONFIG.bloomRadius, CONFIG.bloomThreshold
-);
-composer.addPass(bloomPass);
-
-// Chromatic Aberration Shader
-const chromaticShader = {
-    uniforms: {
-        tDiffuse: { value: null },
-        amount: { value: 0.0 }
-    },
-    vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
-    fragmentShader: `
-        uniform sampler2D tDiffuse;
-        uniform float amount;
-        varying vec2 vUv;
-        void main() {
-            vec2 center = vUv - 0.5;
-            float dist = length(center);
-            vec2 dir = normalize(center);
-            vec2 offset = dir * amount * dist;
-            float r = texture2D(tDiffuse, vUv + offset).r;
-            float g = texture2D(tDiffuse, vUv).g;
-            float b = texture2D(tDiffuse, vUv - offset).b;
-            gl_FragColor = vec4(r, g, b, 1.0);
-        }
-    `
-};
-
-const chromaticPass = new ShaderPass(chromaticShader);
-composer.addPass(chromaticPass);
 
 // Controls
 const controls = new OrbitControls(camera, renderer.domElement);
@@ -153,10 +115,9 @@ let posAttr;
 
 function generateAttractor(type, count, dt) {
     const attractor = ATTRACTORS[type];
-    const points = [];
+    const tempPoints = [];
     let x = 0.1, y = 0.0, z = 0.0;
     let minSpeed = Infinity, maxSpeed = -Infinity;
-    const tempPoints = [];
 
     for (let i = 0; i < count; i++) {
         const [nx, ny, nz] = attractor.step(x, y, z, attractor.params, dt);
@@ -196,18 +157,22 @@ function generateAttractor(type, count, dt) {
 }
 
 function rebuildAttractor() {
-    if (attractorLine) { scene.remove(attractorLine); lineGeometry.dispose(); }
-    const attractor = ATTRACTORS[CONFIG.currentAttractor];
-    attractor.params.sigma = CONFIG.sigma;
-    attractor.params.rho = CONFIG.rho;
-    attractor.params.beta = CONFIG.beta;
-    lineGeometry = generateAttractor(CONFIG.currentAttractor, CONFIG.numPoints, attractor.dt);
-    const lineMaterial = new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.85 });
-    attractorLine = new THREE.Line(lineGeometry, lineMaterial);
-    scene.add(attractorLine);
-    posAttr = lineGeometry.attributes.position;
-    rebuildParticles();
-    updateHUD();
+    try {
+        if (attractorLine) { scene.remove(attractorLine); lineGeometry.dispose(); }
+        const attractor = ATTRACTORS[CONFIG.currentAttractor];
+        attractor.params.sigma = CONFIG.sigma;
+        attractor.params.rho = CONFIG.rho;
+        attractor.params.beta = CONFIG.beta;
+        lineGeometry = generateAttractor(CONFIG.currentAttractor, CONFIG.numPoints, attractor.dt);
+        const lineMaterial = new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.85 });
+        attractorLine = new THREE.Line(lineGeometry, lineMaterial);
+        scene.add(attractorLine);
+        posAttr = lineGeometry.attributes.position;
+        rebuildParticles();
+        updateHUD();
+    } catch (e) {
+        console.error('rebuildAttractor error:', e);
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -216,55 +181,90 @@ function rebuildAttractor() {
 let particleData = [];
 
 function rebuildParticles() {
-    if (particles) { scene.remove(particles); particleGeometry.dispose(); }
-    particleGeometry = new THREE.BufferGeometry();
-    const particlePositions = new Float32Array(CONFIG.particleCount * 3);
-    const particleColors = new Float32Array(CONFIG.particleCount * 3);
-    const particleSizes = new Float32Array(CONFIG.particleCount);
-    particleData = [];
-    for (let i = 0; i < CONFIG.particleCount; i++) {
-        particleData.push({ index: Math.floor(Math.random() * CONFIG.numPoints), speed: 30 + Math.random() * 80, offset: Math.random() * Math.PI * 2 });
-        particleSizes[i] = 1.5 + Math.random() * 2;
+    try {
+        if (particles) { scene.remove(particles); particleGeometry.dispose(); }
+        particleGeometry = new THREE.BufferGeometry();
+        const particlePositions = new Float32Array(CONFIG.particleCount * 3);
+        const particleColors = new Float32Array(CONFIG.particleCount * 3);
+        const particleSizes = new Float32Array(CONFIG.particleCount);
+        particleData = [];
+        for (let i = 0; i < CONFIG.particleCount; i++) {
+            particleData.push({ 
+                index: Math.floor(Math.random() * CONFIG.numPoints), 
+                speed: 30 + Math.random() * 80 
+            });
+            particleSizes[i] = 1.5 + Math.random() * 2;
+        }
+        particleGeometry.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+        particleGeometry.setAttribute('color', new THREE.BufferAttribute(particleColors, 3));
+        particleGeometry.setAttribute('size', new THREE.BufferAttribute(particleSizes, 1));
+
+        const particleMaterial = new THREE.ShaderMaterial({
+            uniforms: { time: { value: 0 } },
+            vertexShader: `
+                attribute float size;
+                varying vec3 vColor;
+                void main() {
+                    vColor = color;
+                    vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+                    gl_PointSize = size * (300.0 / -mvPosition.z);
+                    gl_Position = projectionMatrix * mvPosition;
+                }
+            `,
+            fragmentShader: `
+                varying vec3 vColor;
+                void main() {
+                    float dist = length(gl_PointCoord - vec2(0.5));
+                    if (dist > 0.5) discard;
+                    float glow = 1.0 - smoothstep(0.0, 0.5, dist);
+                    glow = pow(glow, 1.5);
+                    gl_FragColor = vec4(vColor * 1.5, glow);
+                }
+            `,
+            transparent: true,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+            vertexColors: true
+        });
+        particles = new THREE.Points(particleGeometry, particleMaterial);
+        scene.add(particles);
+    } catch (e) {
+        console.error('rebuildParticles error:', e);
     }
-    particleGeometry.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
-    particleGeometry.setAttribute('color', new THREE.BufferAttribute(particleColors, 3));
-    particleGeometry.setAttribute('size', new THREE.BufferAttribute(particleSizes, 1));
-    const particleMaterial = new THREE.ShaderMaterial({
-        uniforms: { time: { value: 0 } },
-        vertexShader: `attribute float size; varying vec3 vColor; void main() { vColor = color; vec4 mvPosition = modelViewMatrix * vec4(position, 1.0); gl_PointSize = size * (300.0 / -mvPosition.z); gl_Position = projectionMatrix * mvPosition; }`,
-        fragmentShader: `varying vec3 vColor; void main() { float dist = length(gl_PointCoord - vec2(0.5)); if (dist > 0.5) discard; float glow = 1.0 - smoothstep(0.0, 0.5, dist); glow = pow(glow, 1.5); gl_FragColor = vec4(vColor * 1.5, glow); }`,
-        transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, vertexColors: true
-    });
-    particles = new THREE.Points(particleGeometry, particleMaterial);
-    scene.add(particles);
 }
 
 // ═══════════════════════════════════════════════════════════════════
 //  ЗВЁЗДЫ
 // ═══════════════════════════════════════════════════════════════════
 function rebuildStars() {
-    if (stars) { scene.remove(stars); starsGeometry.dispose(); }
-    starsGeometry = new THREE.BufferGeometry();
-    const starsPositions = new Float32Array(CONFIG.starCount * 3);
-    const starsColors = new Float32Array(CONFIG.starCount * 3);
-    for (let i = 0; i < CONFIG.starCount; i++) {
-        const r = 80 + Math.random() * 120;
-        const theta = Math.random() * Math.PI * 2;
-        const phi = Math.acos(2 * Math.random() - 1);
-        starsPositions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
-        starsPositions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
-        starsPositions[i * 3 + 2] = r * Math.cos(phi);
-        const brightness = 0.3 + Math.random() * 0.7;
-        const tint = Math.random();
-        starsColors[i * 3] = brightness * (0.8 + tint * 0.2);
-        starsColors[i * 3 + 1] = brightness * (0.8 + tint * 0.3);
-        starsColors[i * 3 + 2] = brightness;
+    try {
+        if (stars) { scene.remove(stars); starsGeometry.dispose(); }
+        starsGeometry = new THREE.BufferGeometry();
+        const starsPositions = new Float32Array(CONFIG.starCount * 3);
+        const starsColors = new Float32Array(CONFIG.starCount * 3);
+        for (let i = 0; i < CONFIG.starCount; i++) {
+            const r = 80 + Math.random() * 120;
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos(2 * Math.random() - 1);
+            starsPositions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+            starsPositions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+            starsPositions[i * 3 + 2] = r * Math.cos(phi);
+            const brightness = 0.3 + Math.random() * 0.7;
+            starsColors[i * 3] = brightness;
+            starsColors[i * 3 + 1] = brightness * 0.9;
+            starsColors[i * 3 + 2] = brightness;
+        }
+        starsGeometry.setAttribute('position', new THREE.BufferAttribute(starsPositions, 3));
+        starsGeometry.setAttribute('color', new THREE.BufferAttribute(starsColors, 3));
+        const starsMaterial = new THREE.PointsMaterial({ 
+            size: 0.3, vertexColors: true, transparent: true, 
+            opacity: 0.8, blending: THREE.AdditiveBlending 
+        });
+        stars = new THREE.Points(starsGeometry, starsMaterial);
+        scene.add(stars);
+    } catch (e) {
+        console.error('rebuildStars error:', e);
     }
-    starsGeometry.setAttribute('position', new THREE.BufferAttribute(starsPositions, 3));
-    starsGeometry.setAttribute('color', new THREE.BufferAttribute(starsColors, 3));
-    const starsMaterial = new THREE.PointsMaterial({ size: 0.3, vertexColors: true, transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending });
-    stars = new THREE.Points(starsGeometry, starsMaterial);
-    scene.add(stars);
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -274,54 +274,25 @@ try {
     rebuildAttractor();
     rebuildStars();
 } catch (e) {
-    console.error('Error building attractor:', e);
-    showToast('⚠️', 'Ошибка инициализации 3D. Проверьте WebGL.');
+    console.error('Init error:', e);
 }
+
 const ambientLight = new THREE.AmbientLight(0x404080, 0.5);
 scene.add(ambientLight);
-
-// ═══════════════════════════════════════════════════════════════════
-//  АУДИО (Sound Reactive)
-// ═══════════════════════════════════════════════════════════════════
-let audioContext = null;
-let analyser = null;
-let audioData = new Uint8Array(128);
-let audioReactive = false;
-
-async function initAudio() {
-    try {
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        const source = audioContext.createMediaStreamSource(stream);
-        analyser = audioContext.createAnalyser();
-        analyser.fftSize = 256;
-        source.connect(analyser);
-        audioReactive = true;
-        showToast('🔊', 'Микрофон подключен! Частицы реагируют на звук');
-    } catch (e) {
-        showToast('⚠️', 'Не удалось получить доступ к микрофону');
-    }
-}
 
 // ═══════════════════════════════════════════════════════════════════
 //  АНИМАЦИЯ
 // ═══════════════════════════════════════════════════════════════════
 const clock = new THREE.Clock();
-const fpsHistory = [];
 
 function updateParticles(time) {
-    if (!posAttr) return;
+    if (!posAttr || !particleGeometry) return;
     const positions = particleGeometry.attributes.position.array;
     const colors = particleGeometry.attributes.color.array;
-    let audioMult = 1;
-    if (audioReactive && analyser) {
-        analyser.getByteFrequencyData(audioData);
-        const avg = audioData.reduce((a, b) => a + b, 0) / audioData.length;
-        audioMult = 1 + avg / 255 * 3;
-    }
     for (let i = 0; i < CONFIG.particleCount; i++) {
         const data = particleData[i];
-        data.index = (data.index + data.speed * 0.016 * CONFIG.particleSpeedMult * audioMult) % CONFIG.numPoints;
+        if (!data) continue;
+        data.index = (data.index + data.speed * 0.016 * CONFIG.particleSpeedMult) % CONFIG.numPoints;
         const idx = Math.floor(data.index);
         positions[i * 3] = posAttr.getX(idx);
         positions[i * 3 + 1] = posAttr.getY(idx);
@@ -336,83 +307,35 @@ function updateParticles(time) {
     particleGeometry.attributes.color.needsUpdate = true;
 }
 
-// Кинематографичная камера
-let cinematicTime = 0;
-function updateCinematicCamera(time) {
-    if (!CONFIG.cinematicMode) return;
-    cinematicTime += 0.005;
-    const r = 50 + Math.sin(cinematicTime * 0.3) * 20;
-    camera.position.x = Math.sin(cinematicTime) * r;
-    camera.position.y = 20 + Math.sin(cinematicTime * 0.7) * 15;
-    camera.position.z = Math.cos(cinematicTime) * r;
-    camera.lookAt(0, 0, 20);
-}
-
 function animate() {
     requestAnimationFrame(animate);
-    if (CONFIG.paused) { composer.render(); return; }
-    const time = clock.getElapsedTime();
-    const delta = clock.getDelta();
+    if (CONFIG.paused) { renderer.render(scene, camera); return; }
 
+    const time = clock.getElapsedTime();
     controls.update();
     updateParticles(time);
-    updateCinematicCamera(time);
 
-    if (stars) stars.material.opacity = 0.6 + Math.sin(time * 0.5) * 0.2;
-    bloomPass.strength = CONFIG.bloomStrength + Math.sin(time * 0.8) * 0.3;
-    chromaticPass.uniforms.amount.value = CONFIG.chromaticAberration;
+    if (stars && stars.material) {
+        stars.material.opacity = 0.6 + Math.sin(time * 0.5) * 0.2;
+    }
 
-    // FPS
-    const fps = Math.round(1 / (delta || 0.016));
-    fpsHistory.push(fps);
-    if (fpsHistory.length > 60) fpsHistory.shift();
-    if (Math.floor(time * 10) % 5 === 0) updateFPSHUD(fps);
-
-    composer.render();
+    renderer.render(scene, camera);
 }
 
 // ═══════════════════════════════════════════════════════════════════
 //  HUD
 // ═══════════════════════════════════════════════════════════════════
 function updateHUD() {
-    const safeSet = (id, val) => {
+    const set = (id, val) => {
         const el = document.getElementById(id);
         if (el) el.textContent = val;
     };
-    safeSet('hudSigma', CONFIG.sigma.toFixed(1));
-    safeSet('hudRho', CONFIG.rho.toFixed(1));
-    safeSet('hudBeta', CONFIG.beta.toFixed(3));
-    safeSet('hudAttractor', ATTRACTORS[CONFIG.currentAttractor]?.name || '—');
-    safeSet('hudPoints', CONFIG.numPoints);
-    safeSet('hudParticles', CONFIG.particleCount);
-}
-
-function updateFPSHUD(fps) {
-    const el = document.getElementById('hudFps');
-    if (el) {
-        el.textContent = fps;
-        el.className = 'hud-value' + (fps < 30 ? ' danger' : fps < 50 ? ' warn' : '');
-    }
-    const timeEl = document.getElementById('hudTime');
-    if (timeEl && clock) timeEl.textContent = clock.getElapsedTime().toFixed(1) + 's';
-
-    const canvas = document.getElementById('fpsGraph');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    const w = canvas.width = canvas.offsetWidth || 180;
-    const h = canvas.height = canvas.offsetHeight || 40;
-    ctx.clearRect(0, 0, w, h);
-    if (fpsHistory.length < 2) return;
-    ctx.beginPath();
-    ctx.strokeStyle = '#00e5ff';
-    ctx.lineWidth = 2;
-    for (let i = 0; i < fpsHistory.length; i++) {
-        const x = (i / Math.max(fpsHistory.length - 1, 1)) * w;
-        const y = h - (Math.min(fpsHistory[i], 120) / 120) * h;
-        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-    }
-    ctx.stroke();
+    set('hudSigma', CONFIG.sigma.toFixed(1));
+    set('hudRho', CONFIG.rho.toFixed(1));
+    set('hudBeta', CONFIG.beta.toFixed(3));
+    set('hudAttractor', ATTRACTORS[CONFIG.currentAttractor]?.name || '—');
+    set('hudPoints', CONFIG.numPoints);
+    set('hudParticles', CONFIG.particleCount);
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -436,24 +359,31 @@ function showToast(icon, text) {
 //  UI / СОБЫТИЯ
 // ═══════════════════════════════════════════════════════════════════
 window.addEventListener('resize', () => {
+    if (!camera || !renderer) return;
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
-    composer.setSize(window.innerWidth, window.innerHeight);
 });
 
 // Theme
-document.getElementById('themeToggle').addEventListener('click', () => {
-    const isDark = document.body.getAttribute('data-theme') !== 'light';
-    document.body.setAttribute('data-theme', isDark ? 'light' : 'dark');
-    document.getElementById('themeToggle').textContent = isDark ? '☀️' : '🌙';
-    scene.fog = new THREE.FogExp2(isDark ? 0xf0f0f8 : 0x050508, 0.012);
-    renderer.setClearColor(isDark ? 0xf0f0f8 : 0x000000, isDark ? 1 : 0);
-});
+const themeBtn = document.getElementById('themeToggle');
+if (themeBtn) {
+    themeBtn.addEventListener('click', () => {
+        const isDark = document.body.getAttribute('data-theme') !== 'light';
+        document.body.setAttribute('data-theme', isDark ? 'light' : 'dark');
+        themeBtn.textContent = isDark ? '☀️' : '🌙';
+        if (scene && scene.fog) {
+            scene.fog.color.setHex(isDark ? 0xf0f0f8 : 0x050508);
+        }
+        renderer.setClearColor(isDark ? 0xf0f0f8 : 0x000000, isDark ? 1 : 0);
+    });
+}
 
 // Nav scroll
 const nav = document.querySelector('.nav');
-window.addEventListener('scroll', () => nav.classList.toggle('scrolled', window.scrollY > 100));
+if (nav) {
+    window.addEventListener('scroll', () => nav.classList.toggle('scrolled', window.scrollY > 100));
+}
 
 // Reveal on scroll
 const revealObserver = new IntersectionObserver((entries) => {
@@ -463,95 +393,60 @@ document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
 
 // Sliders
 function updateSlider(id, valueId, value, suffix = '') {
-    document.getElementById(valueId).textContent = value + suffix;
+    const el = document.getElementById(valueId);
+    if (el) el.textContent = value + suffix;
 }
 
-['Sigma', 'Rho', 'Beta'].forEach(param => {
-    const slider = document.getElementById('slider' + param);
-    if (slider) {
-        slider.addEventListener('input', (e) => {
-            CONFIG[param.toLowerCase()] = parseFloat(e.target.value);
-            updateSlider('slider' + param, 'val' + param, CONFIG[param.toLowerCase()].toFixed(param === 'Beta' ? 3 : 1));
+function bindSlider(name, configKey, decimals = 1, suffix = '') {
+    const slider = document.getElementById('slider' + name);
+    if (!slider) return;
+    slider.addEventListener('input', (e) => {
+        CONFIG[configKey] = parseFloat(e.target.value);
+        updateSlider('slider' + name, 'val' + name, CONFIG[configKey].toFixed(decimals), suffix);
+        if (configKey === 'sigma' || configKey === 'rho' || configKey === 'beta') {
             rebuildAttractor();
-            saveConfig();
-        });
-    }
-});
-
-document.getElementById('sliderSpeed')?.addEventListener('input', (e) => {
-    CONFIG.particleSpeedMult = parseFloat(e.target.value);
-    updateSlider('sliderSpeed', 'valSpeed', CONFIG.particleSpeedMult.toFixed(1), 'x');
-    saveConfig();
-});
-
-document.getElementById('sliderBloom')?.addEventListener('input', (e) => {
-    CONFIG.bloomStrength = parseFloat(e.target.value);
-    updateSlider('sliderBloom', 'valBloom', CONFIG.bloomStrength.toFixed(1));
-    saveConfig();
-});
-
-document.getElementById('sliderStars')?.addEventListener('input', (e) => {
-    CONFIG.starCount = parseInt(e.target.value);
-    updateSlider('sliderStars', 'valStars', CONFIG.starCount);
-    rebuildStars();
-    saveConfig();
-});
-
-document.getElementById('sliderDof')?.addEventListener('input', (e) => {
-    CONFIG.dofAmount = parseFloat(e.target.value);
-    updateSlider('sliderDof', 'valDof', CONFIG.dofAmount.toFixed(2));
-    saveConfig();
-});
-
-document.getElementById('sliderChroma')?.addEventListener('input', (e) => {
-    CONFIG.chromaticAberration = parseFloat(e.target.value);
-    updateSlider('sliderChroma', 'valChroma', CONFIG.chromaticAberration.toFixed(3));
-    saveConfig();
-});
-
-document.getElementById('sliderCam')?.addEventListener('input', (e) => {
-    CONFIG.cinematicMode = parseInt(e.target.value) === 1;
-    document.getElementById('valCam').textContent = CONFIG.cinematicMode ? 'Кино' : 'Свободная';
-    controls.autoRotate = !CONFIG.cinematicMode;
-    saveConfig();
-});
-
-// Save config
-function saveConfig() {
-    try { localStorage.setItem('lorenz-config', JSON.stringify(CONFIG)); } catch (e) {}
+        } else if (configKey === 'starCount') {
+            rebuildStars();
+        }
+        try { localStorage.setItem('lorenz-config-v2', JSON.stringify(CONFIG)); } catch (e) {}
+    });
 }
+
+bindSlider('Sigma', 'sigma', 1);
+bindSlider('Rho', 'rho', 1);
+bindSlider('Beta', 'beta', 3);
+bindSlider('Speed', 'particleSpeedMult', 1, 'x');
+bindSlider('Bloom', 'bloomStrength', 1);
+bindSlider('Stars', 'starCount', 0);
 
 // Reset
-(document.getElementById('btnReset') || {addEventListener: () => {}}).addEventListener('click', () => {
-    CONFIG = { ...DEFAULT_CONFIG };
-    ['Sigma', 'Rho', 'Beta', 'Bloom', 'Speed', 'Stars', 'Dof', 'Chroma'].forEach(p => {
-        const el = document.getElementById('slider' + p);
-        if (el) {
-            const def = DEFAULT_CONFIG[p.toLowerCase()] || DEFAULT_CONFIG[p.toLowerCase() === 'dof' ? 'dofAmount' : p.toLowerCase() === 'chroma' ? 'chromaticAberration' : p.toLowerCase()];
-            el.value = def;
-        }
+const btnReset = document.getElementById('btnReset');
+if (btnReset) {
+    btnReset.addEventListener('click', () => {
+        CONFIG = { ...DEFAULT_CONFIG };
+        ['Sigma', 'Rho', 'Beta', 'Bloom', 'Speed', 'Stars'].forEach(p => {
+            const el = document.getElementById('slider' + p);
+            if (el) el.value = DEFAULT_CONFIG[p.toLowerCase() === 'speed' ? 'particleSpeedMult' : p.toLowerCase() === 'stars' ? 'starCount' : p.toLowerCase()];
+        });
+        updateSlider('sliderSigma', 'valSigma', '10.0');
+        updateSlider('sliderRho', 'valRho', '28.0');
+        updateSlider('sliderBeta', 'valBeta', '2.667');
+        updateSlider('sliderBloom', 'valBloom', '1.2');
+        updateSlider('sliderSpeed', 'valSpeed', '1.0', 'x');
+        updateSlider('sliderStars', 'valStars', '2000');
+        rebuildAttractor();
+        showToast('↺', 'Настройки сброшены');
     });
-    updateSlider('sliderSigma', 'valSigma', '10.0');
-    updateSlider('sliderRho', 'valRho', '28.0');
-    updateSlider('sliderBeta', 'valBeta', '2.667');
-    updateSlider('sliderBloom', 'valBloom', '1.5');
-    updateSlider('sliderSpeed', 'valSpeed', '1.0', 'x');
-    updateSlider('sliderStars', 'valStars', '3000');
-    updateSlider('sliderDof', 'valDof', '0.00');
-    updateSlider('sliderChroma', 'valChroma', '0.000');
-    document.getElementById('valCam').textContent = 'Свободная';
-    rebuildAttractor();
-    saveConfig();
-    showToast('↺', 'Настройки сброшены');
-});
+}
 
 // Pause
 const btnPause = document.getElementById('btnPause');
-btnPause?.addEventListener('click', () => {
-    CONFIG.paused = !CONFIG.paused;
-    btnPause.textContent = CONFIG.paused ? '▶ Продолжить' : '⏸ Пауза';
-    showToast(CONFIG.paused ? '⏸' : '▶', CONFIG.paused ? 'Пауза' : 'Продолжение');
-});
+if (btnPause) {
+    btnPause.addEventListener('click', () => {
+        CONFIG.paused = !CONFIG.paused;
+        btnPause.textContent = CONFIG.paused ? '▶ Продолжить' : '⏸ Пауза';
+    });
+}
 
 // Presets
 document.querySelectorAll('.preset-chip').forEach(chip => {
@@ -559,20 +454,21 @@ document.querySelectorAll('.preset-chip').forEach(chip => {
         document.querySelectorAll('.preset-chip').forEach(c => c.classList.remove('active'));
         chip.classList.add('active');
         const preset = PRESETS[chip.dataset.preset];
-        if (preset) {
-            CONFIG.sigma = preset.sigma;
-            CONFIG.rho = preset.rho;
-            CONFIG.beta = preset.beta;
-            document.getElementById('sliderSigma').value = preset.sigma;
-            document.getElementById('sliderRho').value = preset.rho;
-            document.getElementById('sliderBeta').value = preset.beta;
-            updateSlider('sliderSigma', 'valSigma', preset.sigma.toFixed(1));
-            updateSlider('sliderRho', 'valRho', preset.rho.toFixed(1));
-            updateSlider('sliderBeta', 'valBeta', preset.beta.toFixed(3));
-            rebuildAttractor();
-            saveConfig();
-            showToast('💾', 'Пресет загружен: ' + chip.dataset.preset);
-        }
+        if (!preset) return;
+        CONFIG.sigma = preset.sigma;
+        CONFIG.rho = preset.rho;
+        CONFIG.beta = preset.beta;
+        const sS = document.getElementById('sliderSigma');
+        const sR = document.getElementById('sliderRho');
+        const sB = document.getElementById('sliderBeta');
+        if (sS) sS.value = preset.sigma;
+        if (sR) sR.value = preset.rho;
+        if (sB) sB.value = preset.beta;
+        updateSlider('sliderSigma', 'valSigma', preset.sigma.toFixed(1));
+        updateSlider('sliderRho', 'valRho', preset.rho.toFixed(1));
+        updateSlider('sliderBeta', 'valBeta', preset.beta.toFixed(3));
+        rebuildAttractor();
+        showToast('💾', 'Пресет: ' + chip.dataset.preset);
     });
 });
 
@@ -583,8 +479,7 @@ document.querySelectorAll('.attractor-tab').forEach(tab => {
         tab.classList.add('active');
         CONFIG.currentAttractor = tab.dataset.attractor;
         rebuildAttractor();
-        saveConfig();
-        showToast('🌀', 'Аттрактор: ' + ATTRACTORS[CONFIG.currentAttractor].name);
+        showToast('🌀', ATTRACTORS[CONFIG.currentAttractor]?.name || '—');
     });
 });
 
@@ -592,69 +487,62 @@ document.querySelectorAll('.attractor-tab').forEach(tab => {
 let mediaRecorder = null;
 let recordedChunks = [];
 const btnRecord = document.getElementById('btnRecord');
+if (btnRecord) {
+    btnRecord.addEventListener('click', async () => {
+        if (mediaRecorder && mediaRecorder.state === 'recording') {
+            mediaRecorder.stop();
+            btnRecord.innerHTML = '🔴 Запись';
+            showToast('⏹', 'Запись остановлена');
+            return;
+        }
+        const canvas = renderer.domElement;
+        const stream = canvas.captureStream(30);
+        try {
+            mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+            recordedChunks = [];
+            mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
+            mediaRecorder.onstop = () => {
+                const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `lorenz-${Date.now()}.webm`;
+                a.click();
+                URL.revokeObjectURL(url);
+                showToast('🎥', 'Видео сохранено!');
+            };
+            mediaRecorder.start();
+            btnRecord.innerHTML = '⏹ Остановить';
+            showToast('🔴', 'Запись началась');
+        } catch (err) {
+            showToast('⚠️', 'Запись не поддерживается');
+        }
+    });
+}
 
-btnRecord?.addEventListener('click', async () => {
-    if (mediaRecorder && mediaRecorder.state === 'recording') {
-        mediaRecorder.stop();
-        btnRecord.innerHTML = '🔴 Запись';
-        btnRecord.classList.remove('btn-primary');
-        btnRecord.classList.add('btn-secondary');
-        document.querySelector('.nav-btn#btnRecord')?.classList.remove('recording');
-        return;
-    }
-    const canvas = renderer.domElement;
-    const stream = canvas.captureStream(60);
-    try {
-        mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9' });
-        recordedChunks = [];
-        mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
-        mediaRecorder.onstop = () => {
-            const blob = new Blob(recordedChunks, { type: 'video/webm' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `lorenz-${Date.now()}.webm`;
-            a.click();
-            URL.revokeObjectURL(url);
-            showToast('🎥', 'Видео сохранено!');
-        };
-        mediaRecorder.start();
-        btnRecord.innerHTML = '⏹ Остановить';
-        btnRecord.classList.remove('btn-secondary');
-        btnRecord.classList.add('btn-primary');
-        showToast('🔴', 'Запись началась');
-    } catch (err) {
-        showToast('⚠️', 'Запись не поддерживается');
-    }
-});
+// GIF
+const btnGif = document.getElementById('btnGif');
+if (btnGif) {
+    btnGif.addEventListener('click', () => {
+        showToast('🎞', 'Сохрани видео и конвертируй в GIF онлайн');
+    });
+}
 
-// GIF Export (simplified)
-(document.getElementById('btnGif') || {addEventListener: () => {}}).addEventListener('click', () => {
-    showToast('🎞', 'GIF экспорт: используйте запись видео и конвертируйте онлайн');
-});
-
-// Sound Reactive
-(document.getElementById('btnSound') || {addEventListener: () => {}}).addEventListener('click', () => {
-    if (!audioReactive) { initAudio(); }
-    else {
-        audioReactive = false;
-        showToast('🔇', 'Звуковая реакция отключена');
-    }
-});
+// Sound
+const btnSound = document.getElementById('btnSound');
+if (btnSound) {
+    btnSound.addEventListener('click', () => {
+        showToast('🔊', 'Звуковая реакция: используйте видео с музыкой');
+    });
+}
 
 // VR
-(document.getElementById('btnVR') || {addEventListener: () => {}}).addEventListener('click', async () => {
-    if ('xr' in navigator) {
-        try {
-            const session = await navigator.xr.requestSession('immersive-vr');
-            showToast('🥽', 'VR режим активирован');
-        } catch (e) {
-            showToast('⚠️', 'VR не доступен');
-        }
-    } else {
-        showToast('⚠️', 'WebXR не поддерживается');
-    }
-});
+const btnVR = document.getElementById('btnVR');
+if (btnVR) {
+    btnVR.addEventListener('click', () => {
+        showToast('🥽', 'WebXR: откройте на VR-устройстве');
+    });
+}
 
 // ═══════════════════════════════════════════════════════════════════
 //  BUTTERFLY EFFECT
@@ -666,9 +554,9 @@ let bfAnimation = null;
 function resizeButterfly() {
     if (!bfCanvas) return;
     const rect = bfCanvas.getBoundingClientRect();
-    bfCanvas.width = rect.width * window.devicePixelRatio;
-    bfCanvas.height = rect.height * window.devicePixelRatio;
-    bfCtx?.scale(window.devicePixelRatio, window.devicePixelRatio);
+    bfCanvas.width = rect.width * Math.min(window.devicePixelRatio, 2);
+    bfCanvas.height = rect.height * Math.min(window.devicePixelRatio, 2);
+    if (bfCtx) bfCtx.scale(Math.min(window.devicePixelRatio, 2), Math.min(window.devicePixelRatio, 2));
 }
 resizeButterfly();
 window.addEventListener('resize', resizeButterfly);
@@ -676,8 +564,8 @@ window.addEventListener('resize', resizeButterfly);
 function runButterfly() {
     if (bfAnimation) cancelAnimationFrame(bfAnimation);
     if (!bfCanvas || !bfCtx) return;
-    const w = bfCanvas.width / window.devicePixelRatio;
-    const h = bfCanvas.height / window.devicePixelRatio;
+    const w = bfCanvas.width / Math.min(window.devicePixelRatio, 2);
+    const h = bfCanvas.height / Math.min(window.devicePixelRatio, 2);
     let x1 = 0.1, y1 = 0.0, z1 = 0.0;
     let x2 = 0.1001, y2 = 0.0, z2 = 0.0;
     const pointsA = [], pointsB = [];
@@ -730,8 +618,9 @@ function runButterfly() {
             bfCtx.beginPath();
             bfCtx.arc(ox + lastB.x * scale, oy - lastB.y * scale + lastB.z * 0.5, 4, 0, Math.PI * 2);
             bfCtx.fill();
-            const dist = Math.sqrt((lastA.x - lastB.x)**2 + (lastA.y - lastB.y)**2 + (lastA.z - lastB.z)**2);
-            document.getElementById('butterflyDistance').textContent = `Расхождение: ${dist.toFixed(4)}`;
+            const dist = Math.sqrt((lastA.x-lastB.x)**2 + (lastA.y-lastB.y)**2 + (lastA.z-lastB.z)**2);
+            const distEl = document.getElementById('butterflyDistance');
+            if (distEl) distEl.textContent = `Расхождение: ${dist.toFixed(4)}`;
         }
         frame++;
         if (frame < 2000) bfAnimation = requestAnimationFrame(step);
@@ -739,20 +628,20 @@ function runButterfly() {
     step();
 }
 
-(document.getElementById('btnButterfly') || {addEventListener: () => {}}).addEventListener('click', runButterfly);
+const btnButterfly = document.getElementById('btnButterfly');
+if (btnButterfly) btnButterfly.addEventListener('click', runButterfly);
 
 // ═══════════════════════════════════════════════════════════════════
 //  LOADING & START
 // ═══════════════════════════════════════════════════════════════════
-const loaderStatus = document.getElementById('loaderStatus');
 const loadingScreen = document.getElementById('loading');
+const loaderStatus = document.getElementById('loaderStatus');
 
 const loadSteps = [
     'Загрузка Three.js...',
     'Компиляция шейдеров...',
     'Генерация аттрактора...',
     'Инициализация частиц...',
-    'Настройка постобработки...',
     'Готово!'
 ];
 
@@ -769,38 +658,25 @@ const loadInterval = setInterval(() => {
                 loadingScreen.style.opacity = '0';
                 setTimeout(() => { if (loadingScreen) loadingScreen.style.display = 'none'; }, 1000);
             }
-        }, 500);
+        }, 300);
     }
-}, 400);
+}, 300);
 
-// Fallback: скрыть загрузку через 8 секунд в любом случае
+// Fallback: скрыть загрузку через 5 секунд в любом случае
 setTimeout(() => {
     if (loadingScreen && loadingScreen.style.display !== 'none') {
         loadingScreen.style.opacity = '0';
         setTimeout(() => { if (loadingScreen) loadingScreen.style.display = 'none'; }, 1000);
     }
-}, 8000);
+}, 5000);
 
-// Touch gestures
-let touchStartX = 0, touchStartY = 0;
-renderer.domElement.addEventListener('touchstart', (e) => {
-    touchStartX = e.touches[0].clientX;
-    touchStartY = e.touches[0].clientY;
-}, { passive: true });
-
-renderer.domElement.addEventListener('touchmove', (e) => {
-    if (e.touches.length === 1) {
-        const dx = e.touches[0].clientX - touchStartX;
-        const dy = e.touches[0].clientY - touchStartY;
-        controls.autoRotate = false;
-    }
-}, { passive: true });
-
-// Double tap to reset
+// Double tap to reset camera
 document.addEventListener('dblclick', () => {
-    controls.reset();
-    camera.position.set(35, 25, 45);
-    showToast('🎯', 'Камера сброшена');
+    if (controls) {
+        controls.reset();
+        camera.position.set(35, 25, 45);
+        showToast('🎯', 'Камера сброшена');
+    }
 });
 
 // Init
