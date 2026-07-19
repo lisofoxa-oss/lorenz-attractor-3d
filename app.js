@@ -451,8 +451,14 @@ if (btnPause) {
 // Presets
 document.querySelectorAll('.preset-chip').forEach(chip => {
     chip.addEventListener('click', () => {
-        document.querySelectorAll('.preset-chip').forEach(c => c.classList.remove('active'));
+        document.querySelectorAll('.preset-chip').forEach(c => {
+            c.classList.remove('active');
+            c.style.transform = '';
+            c.style.boxShadow = '';
+        });
         chip.classList.add('active');
+        chip.style.transform = 'translateY(-2px)';
+        chip.style.boxShadow = '0 0 20px rgba(0,229,255,0.15)';
         const preset = PRESETS[chip.dataset.preset];
         if (!preset) return;
         CONFIG.sigma = preset.sigma;
